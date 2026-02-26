@@ -121,6 +121,8 @@ export const Landing = () => {
     },
   ];
 
+  const [playingVideo, setPlayingVideo] = useState(null);
+
   if (showDemos) {
     return (
       <div className="min-h-screen bg-background">
@@ -131,7 +133,10 @@ export const Landing = () => {
             className="mb-8"
           >
             <Button
-              onClick={() => setShowDemos(false)}
+              onClick={() => {
+                setShowDemos(false);
+                setPlayingVideo(null);
+              }}
               data-testid="back-to-home"
               variant="outline"
               className="mb-6 uppercase font-bold tracking-wider"
@@ -152,16 +157,29 @@ export const Landing = () => {
                 data-testid={`demo-video-${demo.id}`}
                 className="bg-card border border-border hover:border-primary/50 transition-colors overflow-hidden group"
               >
-                <div className="relative h-64 overflow-hidden bg-secondary">
-                  <img
-                    src={demo.thumbnail}
-                    alt={demo.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex items-center justify-center">
-                    <PlayCircle className="w-20 h-20 text-primary" strokeWidth={1.5} />
+                {playingVideo === demo.id ? (
+                  <div className="relative h-64 bg-black">
+                    <video
+                      autoPlay
+                      controls
+                      className="w-full h-full object-cover"
+                      onEnded={() => setPlayingVideo(null)}
+                    >
+                      <source src={demo.video_url} type="video/mp4" />
+                    </video>
                   </div>
-                </div>
+                ) : (
+                  <div className="relative h-64 overflow-hidden bg-secondary cursor-pointer" onClick={() => setPlayingVideo(demo.id)}>
+                    <img
+                      src={demo.thumbnail}
+                      alt={demo.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex items-center justify-center">
+                      <PlayCircle className="w-20 h-20 text-primary" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                )}
                 
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-3">
@@ -172,12 +190,12 @@ export const Landing = () => {
                   </div>
                   <p className="text-muted-foreground mb-4">{demo.description}</p>
                   <Button
-                    onClick={() => window.open(demo.video_url, '_blank')}
+                    onClick={() => setPlayingVideo(demo.id)}
                     data-testid={`watch-demo-${demo.id}`}
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 uppercase font-bold tracking-widest"
                   >
                     <PlayCircle className="mr-2 w-5 h-5" />
-                    Watch Demo
+                    {playingVideo === demo.id ? 'Playing...' : 'Watch Demo'}
                   </Button>
                 </div>
               </motion.div>
