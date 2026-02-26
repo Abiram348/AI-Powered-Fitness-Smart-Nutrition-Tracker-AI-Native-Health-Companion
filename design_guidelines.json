@@ -1,0 +1,158 @@
+{
+  "project_name": "AI-Powered Fitness & Smart Nutrition Tracker",
+  "persona": "E1 - The Performance Pro",
+  "theme_strategy": "Dark Mode Dominant (The Tactical Gym)",
+  "emotional_tone": "High Energy, Precision, Discipline, Futuristic",
+  "color_palette": {
+    "background": "#09090b",
+    "foreground": "#fafafa",
+    "card": "#18181b",
+    "card_foreground": "#fafafa",
+    "popover": "#18181b",
+    "popover_foreground": "#fafafa",
+    "primary": "#f97316",
+    "primary_foreground": "#09090b",
+    "secondary": "#27272a",
+    "secondary_foreground": "#fafafa",
+    "muted": "#27272a",
+    "muted_foreground": "#a1a1aa",
+    "accent": "#f97316",
+    "accent_foreground": "#09090b",
+    "destructive": "#ef4444",
+    "destructive_foreground": "#fafafa",
+    "border": "#27272a",
+    "input": "#27272a",
+    "ring": "#f97316",
+    "chart_1": "#f97316",
+    "chart_2": "#3b82f6",
+    "chart_3": "#10b981",
+    "chart_4": "#eab308",
+    "chart_5": "#a855f7"
+  },
+  "typography": {
+    "font_family_heading": "\"Barlow Condensed\", sans-serif",
+    "font_family_body": "\"Manrope\", sans-serif",
+    "import_instruction": "Add this to index.css or index.html: @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;700;900&family=Manrope:wght@400;500;700&display=swap');",
+    "usage_rules": {
+      "headings": "font-barlow font-black tracking-tight uppercase",
+      "body": "font-manrope tracking-wide",
+      "labels": "font-manrope text-xs uppercase tracking-[0.2em] text-muted-foreground"
+    }
+  },
+  "layout_strategy": {
+    "spacing": {
+      "container_padding": "p-6 md:p-12",
+      "section_gap": "gap-8 md:gap-12",
+      "internal_card_padding": "p-6"
+    },
+    "grid_system": "The Bento Grid - Mode A (Asymmetry)",
+    "border_radius": "rounded-none md:rounded-sm",
+    "surface_styles": {
+      "glass": "bg-black/40 backdrop-blur-xl border border-white/10",
+      "card": "bg-card border border-border hover:border-primary/50 transition-colors duration-300",
+      "active_card": "relative overflow-hidden border-primary/50 shadow-[0_0_30px_-10px_rgba(249,115,22,0.3)]"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 uppercase font-bold tracking-widest text-sm skew-x-[-10deg] hover:skew-x-0 transition-transform",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 h-12 px-6 uppercase font-semibold tracking-wider text-sm",
+      "ghost": "hover:bg-accent/10 hover:text-accent uppercase tracking-wider text-xs"
+    },
+    "inputs": {
+      "default": "bg-input/50 border-input focus:border-primary focus:ring-1 focus:ring-primary/50 h-12 text-lg"
+    },
+    "charts": {
+      "library": "recharts",
+      "style": "Minimalist, no grid lines, vibrant strokes, custom tooltips"
+    },
+    "navigation": {
+      "mobile": "Fixed bottom bar, glassmorphism, iconic labels",
+      "desktop": "Top bar, sticky, glassmorphism"
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "install_command": "yarn add framer-motion",
+    "presets": {
+      "fade_in_up": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "transition": { "duration": 0.5, "ease": "easeOut" }
+      },
+      "stagger_container": {
+        "hidden": { "opacity": 0 },
+        "show": {
+          "opacity": 1,
+          "transition": {
+            "staggerChildren": 0.1
+          }
+        }
+      },
+      "hover_scale": {
+        "whileHover": { "scale": 1.02 }
+      }
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_bg": {
+        "url": "https://images.unsplash.com/photo-1758875569215-6f4743bcbe97?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHw0fHxhdGhsZXRlJTIwd29ya291dCUyMGd5bSUyMGludGVuc2l0eXxlbnwwfHx8fDE3NzIxMDIxNTF8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Group of athletes training with tire",
+        "usage": "Landing page hero background with overlay"
+      },
+      "workout_squat": {
+        "url": "https://images.unsplash.com/photo-1770664612843-b44e26070024?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHwzfHxhdGhsZXRlJTIwd29ya291dCUyMGd5bSUyMGludGVuc2l0eXxlbnwwfHx8fDE3NzIxMDIxNTF8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Man performing barbell squat",
+        "usage": "Workout tracking card cover"
+      },
+      "workout_legpress": {
+        "url": "https://images.pexels.com/photos/136404/pexels-photo-136404.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Woman on leg press machine",
+        "usage": "Workout library category thumbnail"
+      },
+      "nutrition_salad": {
+        "url": "https://images.unsplash.com/photo-1606757819934-d61a9f7279d5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxoZWFsdGh5JTIwZm9vZCUyMHNhbGFkJTIwYm93bCUyMGZyZXNofGVufDB8fHx8MTc3MjEwMjE1MXww&ixlib=rb-4.1.0&q=85",
+        "alt": "Fresh vegetable salad bowl",
+        "usage": "Diet coach page header"
+      },
+      "food_ingredients": {
+        "url": "https://images.unsplash.com/photo-1622637103261-ae624e188bd0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHw0fHxoZWFsdGh5JTIwZm9vZCUyMHNhbGFkJTIwYm93bCUyMGZyZXNofGVufDB8fHx8MTc3MjEwMjE1MXww&ixlib=rb-4.1.0&q=85",
+        "alt": "Fresh ingredients preparation",
+        "usage": "Food logger placeholder"
+      },
+      "weight_lifting_dark": {
+         "url": "https://images.pexels.com/photos/17840/pexels-photo.jpg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+         "alt": "Muscular man lifting heavy weights",
+         "usage": "Motivation/Progress section"
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px, large size (24px+)"
+    }
+  },
+  "implementation_steps": [
+    "Install required packages: `yarn add framer-motion @radix-ui/react-icons clsx tailwind-merge`",
+    "Update `tailwind.config.js` with the defined colors and font families (Barlow Condensed, Manrope).",
+    "Import fonts in `index.css`.",
+    "Create a `Layout` component that enforces the dark theme and mobile-first padding.",
+    "Build the `Dashboard` using the Bento Grid strategy.",
+    "Implement `framer-motion` for page transitions and card hover effects."
+  ],
+  "universal_guidelines": {
+    "do_not": [
+      "Use gradients for text.",
+      "Use rounded-xl or rounded-2xl (stick to rounded-sm or rounded-none for the 'Tactical' feel).",
+      "Center text in cards (Always left align for this persona).",
+      "Use 'Inter' font for headings."
+    ],
+    "must_do": [
+      "Use uppercase for all buttons and labels.",
+      "Ensure high contrast (White text on Black bg).",
+      "Use `data-testid` on all interactive elements.",
+      "Make the 'Scan Food' button the most prominent element on mobile."
+    ]
+  },
+  "instructions_to_main_agent": "You are building a high-performance fitness tool. It should feel like a cockpit or a HUD (Heads-Up Display). Avoid 'friendly' or 'cute' aesthetics. Go for 'Cyberpunk Sport'. Use the provided images for the landing page and dashboard placeholders. The 'Scan Food' feature is the core value prop - make it accessible instantly."
+}
