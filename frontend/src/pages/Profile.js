@@ -237,16 +237,38 @@ export const Profile = () => {
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <Label className="uppercase text-xs tracking-wider">Goal Weight (kg)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        data-testid="profile-goal-weight-input"
-                        value={formData.goal_weight || ''}
-                        onChange={(e) => setFormData({ ...formData, goal_weight: e.target.value })}
-                        className="mt-1"
-                      />
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          data-testid="profile-goal-weight-input"
+                          value={formData.goal_weight || ''}
+                          onChange={(e) => setFormData({ ...formData, goal_weight: e.target.value })}
+                          placeholder="Set manually or use BMI"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (formData.height && formData.current_weight) {
+                              const heightM = parseFloat(formData.height) / 100;
+                              const idealWeight = 22 * (heightM * heightM);
+                              setFormData({ ...formData, goal_weight: (Math.round(idealWeight * 10) / 10).toString() });
+                              toast.success(`Goal set to ${Math.round(idealWeight * 10) / 10}kg (healthy BMI)`);
+                            } else {
+                              toast.error('Please enter height and current weight first');
+                            }
+                          }}
+                          data-testid="set-bmi-goal-button"
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 whitespace-nowrap px-4 text-xs uppercase font-bold tracking-wider"
+                        >
+                          BMI Goal
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        BMI-based goal calculates healthy weight (BMI 22) for your height
+                      </p>
                     </div>
 
                     <div>
