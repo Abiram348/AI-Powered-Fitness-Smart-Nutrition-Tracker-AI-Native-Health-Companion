@@ -396,14 +396,18 @@ export const Landing = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1758875569215-6f4743bcbe97?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTN8MHwxfHNlYXJjaHw0fHxhdGhsZXRlJTIwd29ya291dCUyMGd5bSUyMGludGVuc2l0eXxlbnwwfHx8fDE3NzIxMDIxNTF8MA&ixlib=rb-4.1.0&q=85)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            data-testid="hero-video"
+          >
+            <source src="https://cdn.coverr.co/videos/coverr-athletes-training-in-a-gym-7297/1080p.mp4" type="video/mp4" />
+            <source src="https://cdn.coverr.co/videos/coverr-man-doing-a-workout-7615/1080p.mp4" type="video/mp4" />
+          </video>
           <div className="absolute inset-0 bg-black/70" />
         </div>
 
