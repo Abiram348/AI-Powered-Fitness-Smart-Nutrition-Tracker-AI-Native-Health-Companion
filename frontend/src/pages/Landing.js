@@ -415,19 +415,7 @@ export const Landing = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-            data-testid="hero-video"
-          >
-            <source src="https://player.vimeo.com/external/434045526.sd.mp4?s=42f0e7b6f2f8f4e4f5f3d4d8f7f8f9e1&profile_id=164&oauth2_token_id=57447761" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-black/70" />
-        </div>
+        <VideoBackground />
 
         <div className="relative z-10 container mx-auto px-6 text-center">
           <motion.div
