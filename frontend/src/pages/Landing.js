@@ -160,14 +160,14 @@ export const Landing = () => {
               >
                 {playingVideo === demo.id ? (
                   <div className="relative h-64 bg-black">
-                    <video
-                      autoPlay
-                      controls
-                      className="w-full h-full object-cover"
-                      onEnded={() => setPlayingVideo(null)}
-                    >
-                      <source src={demo.video_url} type="video/mp4" />
-                    </video>
+                    <iframe
+                      src={demo.embed_url}
+                      className="w-full h-full"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={demo.title}
+                    />
                   </div>
                 ) : (
                   <div className="relative h-64 overflow-hidden bg-secondary cursor-pointer" onClick={() => setPlayingVideo(demo.id)}>
