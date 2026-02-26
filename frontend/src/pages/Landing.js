@@ -7,6 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useAuth } from '../context/AuthContext';
+import { VideoBackground } from '../components/VideoBackground';
 import axios from 'axios';
 import { toast } from 'sonner';
 
