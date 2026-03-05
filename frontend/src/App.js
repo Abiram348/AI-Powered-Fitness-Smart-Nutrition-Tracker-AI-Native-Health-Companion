@@ -10,6 +10,7 @@ import { WorkoutTracker } from './pages/WorkoutTracker';
 import { WorkoutLibrary } from './pages/WorkoutLibrary';
 import { Analytics } from './pages/Analytics';
 import { DietCoach } from './pages/DietCoach';
+import { FitnessChatbot } from './pages/FitnessChatbot';
 import { Profile } from './pages/Profile';
 import '@/App.css';
 
@@ -86,6 +87,14 @@ function AppContent() {
           element={
             <PrivateRoute>
               <DietCoach />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute>
+              <FitnessChatbot />
             </PrivateRoute>
           }
         />

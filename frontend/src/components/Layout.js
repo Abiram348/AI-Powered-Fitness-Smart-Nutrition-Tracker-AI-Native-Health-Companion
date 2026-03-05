@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Utensils, Droplet, Dumbbell, PlaySquare, LineChart, ChefHat, User, LogOut } from 'lucide-react';
+import { Home, Utensils, Droplet, Dumbbell, PlaySquare, LineChart, ChefHat, MessageCircle, User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Layout = ({ children }) => {
@@ -18,6 +18,7 @@ export const Layout = ({ children }) => {
     { path: '/library', icon: PlaySquare, label: 'Library' },
     { path: '/analytics', icon: LineChart, label: 'Analytics' },
     { path: '/diet-coach', icon: ChefHat, label: 'Diet Coach' },
+    { path: '/chat', icon: MessageCircle, label: 'Chat' },
     { path: '/profile', icon: User, label: 'Profile' },
   ];
 

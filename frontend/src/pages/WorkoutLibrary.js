@@ -16,24 +16,19 @@ export const WorkoutLibrary = () => {
   const [difficultyFilter, setDifficultyFilter] = useState('all');
 
   useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await axios.get(`${API}/workout/library`);
+        setVideos(response.data);
+        setFilteredVideos(response.data);
+      } catch (error) {
+        console.error('Error fetching workout library:', error);
+      }
+    };
     fetchVideos();
   }, []);
 
   useEffect(() => {
-    applyFilters();
-  }, [videos, muscleFilter, difficultyFilter]);
-
-  const fetchVideos = async () => {
-    try {
-      const response = await axios.get(`${API}/workout/library`);
-      setVideos(response.data);
-      setFilteredVideos(response.data);
-    } catch (error) {
-      console.error('Error fetching workout library:', error);
-    }
-  };
-
-  const applyFilters = () => {
     let filtered = videos;
     
     if (muscleFilter !== 'all') {
@@ -45,7 +40,7 @@ export const WorkoutLibrary = () => {
     }
     
     setFilteredVideos(filtered);
-  };
+  }, [videos, muscleFilter, difficultyFilter]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
