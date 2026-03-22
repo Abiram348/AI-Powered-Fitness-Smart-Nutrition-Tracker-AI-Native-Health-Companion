@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/Layout';
-import { User, Calculator, Save } from 'lucide-react';
+import { Coach3D } from '../components/Coach3D';
+import { User, Calculator, Save, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -12,6 +13,14 @@ import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+const COACHES = {
+  marcus: { name: 'Coach Marcus', gender: 'male', tagline: 'Military-style discipline. Zero excuses.', accentColor: '#ef4444', gradient: 'from-red-500 to-orange-600', emoji: '🎖️' },
+  alex: { name: 'Coach Alex', gender: 'male', tagline: 'Your chill bro who keeps it real.', accentColor: '#22c55e', gradient: 'from-green-500 to-emerald-600', emoji: '😎' },
+  dr_raj: { name: 'Dr. Raj', gender: 'male', tagline: 'Evidence-based. Data-driven. Science first.', accentColor: '#3b82f6', gradient: 'from-blue-500 to-cyan-600', emoji: '🧬' },
+  maya: { name: 'Coach Maya', gender: 'female', tagline: 'Empowering strength through positivity.', accentColor: '#a855f7', gradient: 'from-purple-500 to-violet-600', emoji: '🔥' },
+  sophia: { name: 'Dr. Sophia', gender: 'female', tagline: 'Holistic wellness. Mind, body & soul.', accentColor: '#ec4899', gradient: 'from-pink-500 to-rose-600', emoji: '🌸' },
+};
 
 export const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -25,9 +34,13 @@ export const Profile = () => {
     activity_level: 'moderate',
   });
   const [calcResults, setCalcResults] = useState(null);
+  const [selectedCoach, setSelectedCoach] = useState('alex');
+  const [hoveredCoach, setHoveredCoach] = useState(null);
 
   useEffect(() => {
     fetchProfile();
+    // Load selected coach
+    axios.get(`${API}/chatbot/persona`).then(r => setSelectedCoach(r.data.persona)).catch(() => {});
   }, []);
 
   const fetchProfile = async () => {
@@ -101,6 +114,16 @@ export const Profile = () => {
     }
   };
 
+  const handleCoachSelect = async (coachId) => {
+    try {
+      await axios.put(`${API}/chatbot/persona`, { persona: coachId });
+      setSelectedCoach(coachId);
+      toast.success(`${COACHES[coachId].name} is now your coach!`);
+    } catch {
+      toast.error('Failed to select coach');
+    }
+  };
+
   if (!profile) {
     return (
       <Layout>
@@ -113,23 +136,27 @@ export const Profile = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-6 py-8 space-y-8 max-w-4xl">
+      <div className="page-container space-y-6 sm:space-y-8 max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl md:text-5xl font-barlow font-black uppercase">Profile</h1>
-          <p className="text-muted-foreground mt-2 uppercase text-xs tracking-widest">Manage Your Account</p>
+          <h1 className="page-title">Profile</h1>
+          <p className="page-subtitle">Manage Your Account</p>
         </motion.div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-card border border-border">
-            <TabsTrigger data-testid="profile-tab" value="profile" className="uppercase font-bold tracking-wider">
-              <User className="w-4 h-4 mr-2" />
+          <TabsList className="grid w-full grid-cols-3 bg-card border border-border">
+            <TabsTrigger data-testid="profile-tab" value="profile" className="uppercase font-bold tracking-wider text-xs sm:text-sm">
+              <User className="w-4 h-4 mr-1 sm:mr-2" />
               Profile
             </TabsTrigger>
-            <TabsTrigger data-testid="calculators-tab" value="calculators" className="uppercase font-bold tracking-wider">
-              <Calculator className="w-4 h-4 mr-2" />
+            <TabsTrigger data-testid="coach-tab" value="coach" className="uppercase font-bold tracking-wider text-xs sm:text-sm">
+              <Sparkles className="w-4 h-4 mr-1 sm:mr-2" />
+              Coach
+            </TabsTrigger>
+            <TabsTrigger data-testid="calculators-tab" value="calculators" className="uppercase font-bold tracking-wider text-xs sm:text-sm">
+              <Calculator className="w-4 h-4 mr-1 sm:mr-2" />
               Calculators
             </TabsTrigger>
           </TabsList>
@@ -138,11 +165,11 @@ export const Profile = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-card border border-border p-6"
+              className="card-base"
             >
               {!editing ? (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
                     <h2 className="text-2xl font-barlow font-black uppercase">Your Information</h2>
                     <Button
                       onClick={() => setEditing(true)}
@@ -335,13 +362,108 @@ export const Profile = () => {
             </motion.div>
           </TabsContent>
 
+          {/* ===== COACH SELECTION TAB ===== */}
+          <TabsContent value="coach" className="mt-6 space-y-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-base">
+              <h2 className="text-xl sm:text-2xl font-barlow font-black uppercase mb-2">Choose Your AI Coach</h2>
+              <p className="text-muted-foreground text-sm mb-6">
+                Your coach appears on the Dashboard and powers your chat experience.
+              </p>
+
+              {/* Current coach */}
+              <div className="flex items-center gap-4 p-4 mb-6 rounded-lg border-2"
+                style={{ borderColor: COACHES[selectedCoach]?.accentColor, background: `${COACHES[selectedCoach]?.accentColor}08` }}>
+                <div style={{ width: 80, height: 110, transform: 'scale(0.55)', transformOrigin: 'center' }}>
+                  <Coach3D coachId={selectedCoach} mood="celebrating" energy={5} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Current Coach</p>
+                  <p className="font-barlow font-black uppercase text-lg">{COACHES[selectedCoach]?.emoji} {COACHES[selectedCoach]?.name}</p>
+                  <p className="text-xs text-muted-foreground">{COACHES[selectedCoach]?.tagline}</p>
+                </div>
+              </div>
+
+              {/* Male Coaches */}
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <span className="text-blue-400">♂</span> Male Coaches
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                {Object.entries(COACHES).filter(([,c]) => c.gender === 'male').map(([id, c]) => (
+                  <motion.button
+                    key={id}
+                    onClick={() => handleCoachSelect(id)}
+                    onMouseEnter={() => setHoveredCoach(id)}
+                    onMouseLeave={() => setHoveredCoach(null)}
+                    whileHover={{ scale: 1.03, y: -3 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`relative group bg-card border rounded-lg p-3 text-left transition-all overflow-hidden ${
+                      selectedCoach === id ? 'ring-2' : 'border-border'
+                    }`}
+                    style={{
+                      borderColor: hoveredCoach === id || selectedCoach === id ? c.accentColor : undefined,
+                      ringColor: c.accentColor,
+                      boxShadow: hoveredCoach === id ? `0 0 25px ${c.accentColor}22` : undefined,
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className="mb-2" style={{ transform: 'scale(0.5)', transformOrigin: 'center', height: 130 }}>
+                        <Coach3D coachId={id} mood={hoveredCoach === id ? 'waving' : 'idle'} energy={hoveredCoach === id ? 4 : 2} />
+                      </div>
+                      <p className="text-sm font-bold">{c.emoji} {c.name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{c.tagline}</p>
+                      {selectedCoach === id && (
+                        <span className="mt-2 text-[10px] px-2 py-0.5 rounded-full bg-primary text-black font-bold">ACTIVE</span>
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Female Coaches */}
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <span className="text-pink-400">♀</span> Female Coaches
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Object.entries(COACHES).filter(([,c]) => c.gender === 'female').map(([id, c]) => (
+                  <motion.button
+                    key={id}
+                    onClick={() => handleCoachSelect(id)}
+                    onMouseEnter={() => setHoveredCoach(id)}
+                    onMouseLeave={() => setHoveredCoach(null)}
+                    whileHover={{ scale: 1.03, y: -3 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`relative group bg-card border rounded-lg p-3 text-left transition-all overflow-hidden ${
+                      selectedCoach === id ? 'ring-2' : 'border-border'
+                    }`}
+                    style={{
+                      borderColor: hoveredCoach === id || selectedCoach === id ? c.accentColor : undefined,
+                      ringColor: c.accentColor,
+                      boxShadow: hoveredCoach === id ? `0 0 25px ${c.accentColor}22` : undefined,
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className="mb-2" style={{ transform: 'scale(0.5)', transformOrigin: 'center', height: 130 }}>
+                        <Coach3D coachId={id} mood={hoveredCoach === id ? 'waving' : 'idle'} energy={hoveredCoach === id ? 4 : 2} />
+                      </div>
+                      <p className="text-sm font-bold">{c.emoji} {c.name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{c.tagline}</p>
+                      {selectedCoach === id && (
+                        <span className="mt-2 text-[10px] px-2 py-0.5 rounded-full bg-primary text-black font-bold">ACTIVE</span>
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          </TabsContent>
+
           <TabsContent value="calculators" className="mt-6 space-y-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-card border border-border p-6"
+              className="card-base"
             >
-              <h2 className="text-2xl font-barlow font-black uppercase mb-4">Fitness Calculators</h2>
+              <h2 className="text-xl sm:text-2xl font-barlow font-black uppercase mb-4">Fitness Calculators</h2>
               <p className="text-muted-foreground mb-6">Calculate your BMI, BMR, and TDEE</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -423,7 +545,7 @@ export const Profile = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-primary/50 p-6"
+                className="card-base border-primary/30"
               >
                 <h3 className="text-xl font-barlow font-black uppercase mb-6">Your Results</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -53,13 +53,13 @@ export const WorkoutLibrary = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="page-container space-y-6 sm:space-y-8 max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl md:text-5xl font-barlow font-black uppercase">Workout Library</h1>
-          <p className="text-muted-foreground mt-2 uppercase text-xs tracking-widest">Professional Training Programs</p>
+          <h1 className="page-title">Workout Library</h1>
+          <p className="page-subtitle">Professional Training Programs</p>
         </motion.div>
 
         {/* Filters */}
@@ -67,7 +67,7 @@ export const WorkoutLibrary = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col md:flex-row gap-4 bg-card border border-border p-4"
+          className="flex flex-col md:flex-row gap-3 sm:gap-4 card-base"
         >
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-primary" />

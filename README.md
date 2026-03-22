@@ -13,7 +13,7 @@
 
 *Understand what you eat, how you move, and how to optimize — powered by computer vision and large language models.*
 
-[Overview](#overview) • [Features](#key-features) • [Architecture](#system-architecture) • [Quick Start](#quick-start) • [Roadmap](#roadmap)
+[Overview](#overview) • [Features](#key-features) • [Architecture](#system-architecture) • [Quick Start](#quick-start) • [Deployment](DEPLOYMENT_GUIDE.md) • [Roadmap](#roadmap)
 
 </div>
 

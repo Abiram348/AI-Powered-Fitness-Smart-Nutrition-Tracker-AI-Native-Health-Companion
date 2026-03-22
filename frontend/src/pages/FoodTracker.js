@@ -137,13 +137,13 @@ export const FoodTracker = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-6 py-8 space-y-8 max-w-4xl">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl md:text-5xl font-barlow font-black uppercase">Food Tracker</h1>
-          <p className="text-muted-foreground mt-2 uppercase text-xs tracking-widest">AI-Powered Nutrition Tracking</p>
+          <h1 className="page-title">Food Tracker</h1>
+          <p className="page-subtitle">AI-Powered Nutrition Tracking</p>
         </motion.div>
 
         {/* Daily Summary */}
@@ -151,25 +151,25 @@ export const FoodTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-card border border-border p-6"
+          className="card-hover"
         >
-          <h2 className="text-xl font-barlow font-black uppercase mb-4">Today's Totals</h2>
+          <h2 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Today's Totals</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Calories</p>
-              <p className="text-3xl font-barlow font-black text-primary">{Math.round(totalCalories)}</p>
+              <p className="text-2xl sm:text-3xl font-barlow font-black text-primary">{Math.round(totalCalories)}</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Protein</p>
-              <p className="text-3xl font-barlow font-black text-chart-3">{Math.round(totalProtein)}g</p>
+              <p className="text-2xl sm:text-3xl font-barlow font-black text-chart-3">{Math.round(totalProtein)}g</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Carbs</p>
-              <p className="text-3xl font-barlow font-black text-chart-4">{Math.round(totalCarbs)}g</p>
+              <p className="text-2xl sm:text-3xl font-barlow font-black text-chart-4">{Math.round(totalCarbs)}g</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Fat</p>
-              <p className="text-3xl font-barlow font-black text-chart-2">{Math.round(totalFat)}g</p>
+              <p className="text-2xl sm:text-3xl font-barlow font-black text-chart-2">{Math.round(totalFat)}g</p>
             </div>
           </div>
         </motion.div>
@@ -179,7 +179,7 @@ export const FoodTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-card border border-primary/50 p-8 text-center"
+          className="card-base border-primary/30 p-4 sm:p-8 text-center"
         >
           <input
             ref={fileInputRef}
@@ -233,9 +233,9 @@ export const FoodTracker = () => {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="bg-card border border-border p-6"
+            className="card-base"
           >
-            <h3 className="text-xl font-barlow font-black uppercase mb-4">Manual Food Entry</h3>
+            <h3 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Manual Food Entry</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <Label className="uppercase text-xs tracking-wider">Food Name</Label>
@@ -325,9 +325,9 @@ export const FoodTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="bg-card border border-border p-6"
+          className="card-hover"
         >
-          <h2 className="text-xl font-barlow font-black uppercase mb-4">Today's Meals</h2>
+          <h2 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Today's Meals</h2>
           
           {foodLogs.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No food logged today. Start by scanning a meal!</p>
@@ -346,7 +346,7 @@ export const FoodTracker = () => {
                         {log.meal_type}
                       </span>
                     </div>
-                    <div className="flex gap-4 text-sm">
+                    <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
                       <span><strong className="text-primary">{Math.round(log.calories)}</strong> cal</span>
                       <span><strong className="text-chart-3">{Math.round(log.protein)}g</strong> protein</span>
                       <span><strong className="text-chart-4">{Math.round(log.carbs)}g</strong> carbs</span>

@@ -54,13 +54,13 @@ export const WaterTracker = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-6 py-8 space-y-8 max-w-3xl">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl md:text-5xl font-barlow font-black uppercase">Water Tracker</h1>
-          <p className="text-muted-foreground mt-2 uppercase text-xs tracking-widest">Stay Hydrated, Stay Strong</p>
+          <h1 className="page-title">Water Tracker</h1>
+          <p className="page-subtitle">Stay Hydrated, Stay Strong</p>
         </motion.div>
 
         {/* Water Progress */}
@@ -68,17 +68,17 @@ export const WaterTracker = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-card border border-border p-8 text-center"
+          className="card-hover p-6 sm:p-8 text-center"
         >
           <div className="relative inline-block mb-6">
-            <div className="w-48 h-48 rounded-full border-8 border-secondary flex items-center justify-center relative overflow-hidden">
+            <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full border-4 sm:border-8 border-secondary flex items-center justify-center relative overflow-hidden">
               <div
                 className="absolute bottom-0 left-0 right-0 bg-chart-2 transition-all duration-700"
                 style={{ height: `${progress}%` }}
               />
               <div className="relative z-10 text-center">
-                <Droplet className="w-16 h-16 text-chart-2 mx-auto mb-2" />
-                <p className="text-4xl font-barlow font-black">{Math.round(totalWater / 1000)}L</p>
+                <Droplet className="w-10 h-10 sm:w-16 sm:h-16 text-chart-2 mx-auto mb-1 sm:mb-2" />
+                <p className="text-2xl sm:text-4xl font-barlow font-black">{Math.round(totalWater / 1000)}L</p>
               </div>
             </div>
           </div>
@@ -99,16 +99,16 @@ export const WaterTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-card border border-border p-6"
+          className="card-hover"
         >
-          <h2 className="text-xl font-barlow font-black uppercase mb-4">Quick Log</h2>
+          <h2 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Quick Log</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {QUICK_AMOUNTS.map((amount) => (
               <Button
                 key={amount}
                 onClick={() => logWater(amount)}
                 data-testid={`quick-log-${amount}ml`}
-                className="h-24 flex flex-col items-center justify-center gap-2 bg-primary/10 border-2 border-primary/30 hover:bg-primary hover:text-primary-foreground transition-all"
+                className="h-20 sm:h-24 flex flex-col items-center justify-center gap-1.5 sm:gap-2 bg-primary/10 border-2 border-primary/30 hover:bg-primary hover:text-primary-foreground transition-all rounded-lg"
               >
                 <Droplet className="w-8 h-8" />
                 <span className="text-lg font-barlow font-black">{amount}ml</span>
@@ -122,9 +122,9 @@ export const WaterTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="bg-card border border-border p-6"
+          className="card-hover"
         >
-          <h2 className="text-xl font-barlow font-black uppercase mb-4">Custom Amount</h2>
+          <h2 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Custom Amount</h2>
           <div className="flex gap-4">
             <div className="flex-1">
               <Label className="uppercase text-xs tracking-wider">Amount (ml)</Label>
@@ -154,9 +154,9 @@ export const WaterTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="bg-card border border-border p-6"
+          className="card-hover"
         >
-          <h2 className="text-xl font-barlow font-black uppercase mb-4">Hydration Tips</h2>
+          <h2 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Hydration Tips</h2>
           <ul className="space-y-3 text-sm text-muted-foreground">
             <li className="flex items-start gap-3">
               <Droplet className="w-5 h-5 text-chart-2 flex-shrink-0 mt-0.5" />

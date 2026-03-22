@@ -3,6 +3,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -11,11 +12,13 @@ from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
+from urllib.parse import quote_plus
 import jwt
 import bcrypt
 import base64
 import google.generativeai as genai
 import io
+import certifi
 from PIL import Image
 
 ROOT_DIR = Path(__file__).parent
@@ -23,7 +26,10 @@ load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+if mongo_url.startswith('mongodb+srv') or 'mongodb.net' in mongo_url:
+    client = AsyncIOMotorClient(mongo_url, tlsCAFile=certifi.where())
+else:
+    client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # JWT Configuration
@@ -69,6 +75,13 @@ def verify_token(token: str) -> str:
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     return verify_token(credentials.credentials)
 
+
+def build_youtube_search_url(query: str) -> str:
+    cleaned = (query or "healthy recipe").strip()
+    if not cleaned:
+        cleaned = "healthy recipe"
+    return f"https://www.youtube.com/results?search_query={quote_plus(cleaned)}"
+
 # Models
 
 
@@ -76,6 +89,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     name: str
+    gender: Optional[str] = None
     age: Optional[int] = None
     height: Optional[float] = None
     current_weight: Optional[float] = None
@@ -203,11 +217,23 @@ class DietPlanRequest(BaseModel):
     dietary_preferences: Optional[str] = None
 
 
+class DietMealRecipe(BaseModel):
+    meal_name: str
+    short_description: str
+    ingredients: List[str] = Field(default_factory=list)
+    steps: List[str] = Field(default_factory=list)
+    prep_time_minutes: Optional[int] = None
+    calories_estimate: Optional[int] = None
+    video_url: Optional[str] = None
+    video_search_url: Optional[str] = None
+
+
 class DietPlanResponse(BaseModel):
     plan: str
     daily_calories: int
     macro_split: Dict[str, float]
     meal_suggestions: List[str]
+    meal_recipes: List[DietMealRecipe] = Field(default_factory=list)
 
 
 class CalculatorInput(BaseModel):
@@ -231,18 +257,22 @@ class ProfileUpdate(BaseModel):
 
 
 class ChatPersonaUpdate(BaseModel):
-    persona: str  # "strict_coach", "friendly_buddy", "motivational", "scientific"
+    persona: str
 
 
 class ChatMessage(BaseModel):
     message: str
-    persona: Optional[str] = None  # override per-message if desired
+    persona: Optional[str] = None
 
 
 class ChatHistoryItem(BaseModel):
-    role: str  # "user" or "assistant"
+    role: str
     content: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class SentimentRequest(BaseModel):
+    text: str
 
 # Auth Routes
 
@@ -261,6 +291,7 @@ async def register(user_data: UserRegister):
         "email": user_data.email,
         "password": hashed_password.decode(),
         "name": user_data.name,
+        "gender": user_data.gender,
         "age": user_data.age,
         "height": user_data.height,
         "current_weight": user_data.current_weight,
@@ -436,6 +467,14 @@ async def get_water_logs(date: Optional[str] = None, user_id: str = Depends(get_
 
     return {"logs": logs, "total_ml": total}
 
+
+@api_router.delete("/water/log/{log_id}")
+async def delete_water_log(log_id: str, user_id: str = Depends(get_current_user)):
+    result = await db.water_logs.delete_one({"id": log_id, "user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Log not found")
+    return {"message": "Log deleted"}
+
 # Weight Routes
 
 
@@ -607,8 +646,17 @@ async def generate_diet_plan(plan_request: DietPlanRequest, user_id: str = Depen
 Provide:
 1. Recommended daily calorie intake
 2. Macro split (protein, carbs, fat percentages)
-3. 5 specific meal suggestions
+3. 5 specific meal recipes with practical cooking guidance
 4. General dietary advice
+
+For each meal recipe include:
+- meal_name
+- short_description
+- ingredients (4-10 items)
+- steps (4-8 clear and short steps)
+- prep_time_minutes
+- calories_estimate
+- video_query (query text to find a preparation video on YouTube)
 
 Format your response as JSON:
 {{
@@ -616,34 +664,209 @@ Format your response as JSON:
   "protein_percentage": number,
   "carbs_percentage": number,
   "fat_percentage": number,
-  "meal_suggestions": ["meal 1", "meal 2", ...],
+    "meal_suggestions": ["meal 1", "meal 2", ...],
+    "meal_recipes": [
+        {{
+            "meal_name": "meal name",
+            "short_description": "one-line summary",
+            "ingredients": ["ingredient 1", "ingredient 2"],
+            "steps": ["step 1", "step 2"],
+            "prep_time_minutes": number,
+            "calories_estimate": number,
+            "video_query": "search phrase"
+        }}
+    ],
   "advice": "general advice text"
 }}
 """
 
-        response = model.generate_content(prompt)
-
         import json
-        response_text = response.text.strip()
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
 
-        plan_data = json.loads(response_text)
+        plan_data: Dict = {}
+        try:
+            response = model.generate_content(prompt)
+            response_text = (response.text or "").strip()
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            parsed = json.loads(response_text)
+            if isinstance(parsed, dict):
+                plan_data = parsed
+            else:
+                logging.warning("Diet plan response was valid JSON but not an object. Falling back to defaults.")
+        except Exception as llm_error:
+            logging.warning(f"Diet plan LLM response parse failed, using defaults: {str(llm_error)}")
+
+        def to_int(value, default):
+            try:
+                if value is None:
+                    return default
+                return int(float(value))
+            except (TypeError, ValueError):
+                return default
+
+        def to_float(value, default):
+            try:
+                if value is None:
+                    return default
+                return float(value)
+            except (TypeError, ValueError):
+                return default
+
+        meal_recipes: List[DietMealRecipe] = []
+        raw_recipes = plan_data.get("meal_recipes", [])
+        if isinstance(raw_recipes, list):
+            for recipe in raw_recipes[:5]:
+                if not isinstance(recipe, dict):
+                    continue
+
+                meal_name = str(recipe.get("meal_name") or recipe.get("name") or "").strip()
+                if not meal_name:
+                    continue
+
+                ingredients_raw = recipe.get("ingredients", [])
+                steps_raw = recipe.get("steps", [])
+                ingredients = [str(item).strip() for item in ingredients_raw if str(item).strip()] if isinstance(ingredients_raw, list) else []
+                steps = [str(item).strip() for item in steps_raw if str(item).strip()] if isinstance(steps_raw, list) else []
+
+                if not ingredients:
+                    ingredients = [
+                        "Lean protein source",
+                        "Complex carbohydrate",
+                        "Fresh vegetables",
+                        "Healthy fat source"
+                    ]
+
+                if not steps:
+                    steps = [
+                        f"Gather ingredients for {meal_name}.",
+                        "Prep and portion all ingredients.",
+                        "Cook protein and vegetables with minimal oil.",
+                        "Serve in a balanced portion based on your calorie target."
+                    ]
+
+                short_description = str(recipe.get("short_description") or recipe.get("description") or "").strip()
+                if not short_description:
+                    short_description = "Balanced meal aligned to your calorie and macro targets."
+                video_url = str(recipe.get("video_url") or "").strip() or None
+                video_query = str(recipe.get("video_query") or meal_name).strip()
+                video_search_url = build_youtube_search_url(video_query)
+
+                prep_time = recipe.get("prep_time_minutes")
+                calories_estimate = recipe.get("calories_estimate")
+
+                prep_time_int = None
+                if prep_time is not None:
+                    try:
+                        prep_time_int = int(float(prep_time))
+                    except (TypeError, ValueError):
+                        prep_time_int = None
+
+                calories_estimate_int = None
+                if calories_estimate is not None:
+                    try:
+                        calories_estimate_int = int(float(calories_estimate))
+                    except (TypeError, ValueError):
+                        calories_estimate_int = None
+
+                meal_recipes.append(
+                    DietMealRecipe(
+                        meal_name=meal_name,
+                        short_description=short_description,
+                        ingredients=ingredients,
+                        steps=steps,
+                        prep_time_minutes=prep_time_int,
+                        calories_estimate=calories_estimate_int,
+                        video_url=video_url,
+                        video_search_url=video_search_url,
+                    )
+                )
+
+        meal_suggestions_raw = plan_data.get("meal_suggestions", [])
+        meal_suggestions = [
+            str(meal).strip()
+            for meal in meal_suggestions_raw
+            if isinstance(meal, str) and meal.strip()
+        ] if isinstance(meal_suggestions_raw, list) else []
+
+        if not meal_suggestions and meal_recipes:
+            meal_suggestions = [recipe.meal_name for recipe in meal_recipes]
+
+        if not meal_recipes and meal_suggestions:
+            for meal in meal_suggestions[:5]:
+                meal_recipes.append(
+                    DietMealRecipe(
+                        meal_name=meal,
+                        short_description="Balanced meal tailored to your goal.",
+                        ingredients=[
+                            "Lean protein source",
+                            "Complex carbohydrate",
+                            "Fiber-rich vegetables",
+                            "Healthy fat source"
+                        ],
+                        steps=[
+                            "Prepare and portion all ingredients.",
+                            "Cook protein with minimal oil.",
+                            "Add vegetables and cook until tender.",
+                            "Serve with complex carbs and healthy fat in balanced portions."
+                        ],
+                        video_search_url=build_youtube_search_url(f"{meal} healthy recipe")
+                    )
+                )
+
+        if not meal_recipes:
+            fallback_meals = [
+                "High-protein breakfast bowl",
+                "Grilled protein and quinoa salad",
+                "Lentil and vegetable power lunch",
+                "Greek yogurt fruit snack",
+                "Baked fish or tofu with roasted vegetables"
+            ]
+            meal_suggestions = fallback_meals.copy()
+
+            for meal in fallback_meals:
+                meal_recipes.append(
+                    DietMealRecipe(
+                        meal_name=meal,
+                        short_description="A practical, balanced meal for sustainable progress.",
+                        ingredients=[
+                            "Lean protein",
+                            "Whole grain or complex carbs",
+                            "Colorful vegetables",
+                            "Healthy fat (nuts, seeds, or olive oil)"
+                        ],
+                        steps=[
+                            "Prepare and portion all ingredients.",
+                            "Cook protein and carbs until done.",
+                            "Add vegetables and season lightly.",
+                            "Plate and adjust portion size to fit your daily target."
+                        ],
+                        video_search_url=build_youtube_search_url(f"{meal} healthy recipe")
+                    )
+                )
+
+        advice_text = str(plan_data.get("advice") or "").strip()
+        if not advice_text:
+            advice_text = (
+                "Prioritize whole foods, hydrate well, and keep portions aligned with your calorie target. "
+                "Aim for consistent meal timing and include protein in every meal for better satiety and recovery."
+            )
 
         return DietPlanResponse(
-            plan=plan_data.get("advice", ""),
-            daily_calories=int(plan_data.get("daily_calories", 2000)),
+            plan=advice_text,
+            daily_calories=to_int(plan_data.get("daily_calories"), 2000),
             macro_split={
-                "protein": plan_data.get("protein_percentage", 30),
-                "carbs": plan_data.get("carbs_percentage", 40),
-                "fat": plan_data.get("fat_percentage", 30)
+                "protein": to_float(plan_data.get("protein_percentage"), 30),
+                "carbs": to_float(plan_data.get("carbs_percentage"), 40),
+                "fat": to_float(plan_data.get("fat_percentage"), 30)
             },
-            meal_suggestions=plan_data.get("meal_suggestions", [])
+            meal_suggestions=meal_suggestions,
+            meal_recipes=meal_recipes
         )
     except Exception as e:
         logging.error(f"Diet plan generation error: {str(e)}")
@@ -809,116 +1032,198 @@ async def update_profile(profile_data: ProfileUpdate, user_id: str = Depends(get
 
 # ==================== CHATBOT ROUTES ====================
 
-PERSONA_PROMPTS = {
-    "strict_coach": """You are a STRICT FITNESS COACH. You are tough, no-nonsense, and push users hard.
-- Use direct, commanding language. Don't sugarcoat things.
-- Call out excuses immediately. Be brutally honest about their habits.
-- Use phrases like "No excuses!", "Push harder!", "You didn't come this far to only come this far!"
-- Give specific, actionable fitness and nutrition advice.
-- Keep responses concise and punchy. Short sentences. High energy.
-- If they mention skipping workouts or eating junk, give them a stern but caring reality check.
-- You care deeply but show it through tough love.""",
+# 5 Coach personas — 3 Male, 2 Female — each with a distinct personality
+COACH_PROFILES = {
+    "marcus": {
+        "name": "Coach Marcus",
+        "gender": "male",
+        "tagline": "Military-style discipline. Zero excuses.",
+        "avatar_style": "muscular_male",
+        "accent_color": "#ef4444",
+        "prompt": """You are COACH MARCUS — a military-style male fitness coach in his 40s.
+You are extremely strict, disciplined, and no-nonsense.
+- Speak like a drill sergeant. Short, punchy commands.
+- Call the user 'soldier' or 'recruit' sometimes.
+- Push them relentlessly. Zero tolerance for excuses.
+- Use phrases like 'Drop and give me 20!', 'Pain is weakness leaving the body!', 'No retreat, no surrender!'
+- Deep down you care, but you show it through brutal honesty and tough love.
+- If they mention slacking, give them a fiery motivational wake-up call."""
+    },
+    "alex": {
+        "name": "Coach Alex",
+        "gender": "male",
+        "tagline": "Your chill bro who keeps it real.",
+        "avatar_style": "athletic_male",
+        "accent_color": "#22c55e",
+        "prompt": """You are COACH ALEX — a laid-back, friendly male fitness buddy in his late 20s.
+You're like a best friend who also happens to be a fitness enthusiast.
+- Super casual, warm, and encouraging. Use slang naturally.
+- Use emojis sometimes 💪🔥😊 to keep things fun.
+- Celebrate every small win. 'Dude, that's awesome!' 'Bro, you crushed it!'
+- Share relatable experiences ('Man, I hate leg day too but trust me...').
+- Make fitness feel fun, not like a chore.
+- If they're down, hype them up with genuine positivity."""
+    },
+    "dr_raj": {
+        "name": "Dr. Raj",
+        "gender": "male",
+        "tagline": "Evidence-based. Data-driven. Science first.",
+        "avatar_style": "professional_male",
+        "accent_color": "#3b82f6",
+        "prompt": """You are DR. RAJ — a male sports scientist and nutritionist in his 30s with a PhD.
+You are analytical, precise, and evidence-based.
+- Always cite scientific principles. 'Research indicates...', 'Studies show...'
+- Explain the biology: muscle protein synthesis, metabolic adaptation, hormonal responses.
+- Use data and numbers. 'Aim for 1.6-2.2g protein per kg bodyweight.'
+- Be thorough but make complex topics accessible.
+- Patient and methodical. You love when users ask 'why'.
+- Think of yourself as a professor who genuinely wants people to understand the science."""
+    },
+    "maya": {
+        "name": "Coach Maya",
+        "gender": "female",
+        "tagline": "Empowering strength through positivity.",
+        "avatar_style": "athletic_female",
+        "accent_color": "#a855f7",
+        "prompt": """You are COACH MAYA — a powerful, motivational female fitness coach in her early 30s.
+You are an empowering force of nature who inspires through passion and energy.
+- Speak with fire and conviction. You BELIEVE in every person you coach.
+- Use phrases like 'You are UNSTOPPABLE!', 'Feel that power!', 'You were BORN to do this!'
+- Paint vivid pictures of their future success. Make them feel the transformation.
+- Focus on empowerment, self-love, and inner strength alongside physical fitness.
+- You've overcome your own struggles and share that vulnerability.
+- Balance motivational fire with practical, actionable advice."""
+    },
+    "sophia": {
+        "name": "Dr. Sophia",
+        "gender": "female",
+        "tagline": "Holistic wellness. Mind, body & soul.",
+        "avatar_style": "wellness_female",
+        "accent_color": "#ec4899",
+        "prompt": """You are DR. SOPHIA — a female holistic wellness coach and certified nutritionist in her late 30s.
+You take a mind-body-soul approach to fitness and health.
+- Warm, nurturing, and deeply empathetic. You truly listen.
+- Connect physical fitness with mental health, stress management, and mindfulness.
+- Use phrases like 'Listen to your body', 'Let's nourish both body and mind', 'Balance is key'.
+- Incorporate yoga, meditation, breathing techniques alongside traditional fitness.
+- Address emotional eating, stress, sleep, and recovery holistically.
+- You make everyone feel safe, understood, and capable of change."""
+    }
+}
 
-    "friendly_buddy": """You are a FRIENDLY FITNESS BUDDY. You're like a best friend who happens to love fitness.
-- Use casual, warm, encouraging language. Lots of positivity!
-- Use emojis occasionally 💪🔥😊 to keep things fun.
-- Celebrate small wins enthusiastically. Every step counts!
-- Share relatable experiences ("I know how hard it is to wake up early for a workout!").
-- Give advice in a supportive, non-judgmental way.
-- Use phrases like "Hey! You got this!", "That's awesome progress!", "Don't worry, we all have off days!"
-- Make fitness feel fun and achievable, not intimidating.""",
+PERSONA_PROMPTS = {k: v["prompt"] for k, v in COACH_PROFILES.items()}
 
-    "motivational": """You are a MOTIVATIONAL FITNESS SPEAKER. You inspire and uplift with every message.
-- Use powerful, inspiring language that stirs emotion.
-- Share motivational quotes and connect them to the user's journey.
-- Focus on the WHY behind fitness - health, confidence, longevity, mental clarity.
-- Use phrases like "Your body is capable of incredible things!", "Every rep is a step closer to the best version of you!"
-- Paint vivid pictures of their future success.
-- Be passionate and energetic. Make them FEEL the possibility.
-- Balance inspiration with practical next steps.""",
-
-    "scientific": """You are a SCIENTIFIC FITNESS ADVISOR. You are evidence-based and analytical.
-- Cite scientific principles behind your recommendations.
-- Explain the biology: how muscles grow, how metabolism works, how nutrients affect the body.
-- Use precise language with data and numbers when relevant.
-- Reference concepts like progressive overload, TDEE, macronutrient ratios, recovery science.
-- Be thorough but make complex topics digestible.
-- Use phrases like "Research shows...", "Based on exercise physiology...", "The data suggests..."
-- Help users understand the science so they can make informed decisions."""
+SENTIMENT_KEYWORDS = {
+    "positive": ["great", "awesome", "love", "amazing", "happy", "excited", "wonderful",
+                 "fantastic", "good", "excellent", "progress", "achieved", "proud", "strong",
+                 "motivated", "energized", "thanks", "thank", "perfect", "yes", "yeah", "crushed"],
+    "negative": ["tired", "exhausted", "hate", "can't", "quit", "give up", "sore", "pain",
+                 "frustrated", "angry", "disappointed", "failed", "weak", "sad", "depressed",
+                 "unmotivated", "lazy", "bored", "hurt", "injury", "sick", "stressed", "anxious"],
+    "curious": ["how", "what", "why", "when", "should", "could", "explain", "tell me",
+                "help", "advice", "recommend", "suggest", "best", "difference", "?"],
+    "greeting": ["hi", "hello", "hey", "sup", "yo", "morning", "evening", "night",
+                 "what's up", "howdy", "greetings"]
 }
 
 
-@api_router.get("/chatbot/personas")
-async def get_personas():
-    """Return available chatbot personas."""
-    return {
-        "personas": [
-            {
-                "id": "strict_coach",
-                "name": "Strict Coach",
-                "emoji": "🏋️",
-                "description": "Tough love, no excuses. Pushes you to your limits with direct, no-nonsense coaching.",
-                "sample": "Drop and give me 20! No excuses today!"
-            },
-            {
-                "id": "friendly_buddy",
-                "name": "Friendly Buddy",
-                "emoji": "😊",
-                "description": "Your supportive best friend who makes fitness fun and celebrates every win.",
-                "sample": "Hey! You're doing amazing! Let's crush it together! 💪"
-            },
-            {
-                "id": "motivational",
-                "name": "Motivational Speaker",
-                "emoji": "🔥",
-                "description": "Inspiring words that ignite your passion and keep you focused on your goals.",
-                "sample": "Your body is capable of incredible things. Believe it!"
-            },
-            {
-                "id": "scientific",
-                "name": "Science Advisor",
-                "emoji": "🧬",
-                "description": "Evidence-based guidance with the science behind every recommendation.",
-                "sample": "Research shows progressive overload increases hypertrophy by 23%."
-            }
-        ]
+def analyze_sentiment(text: str) -> Dict:
+    """Fast keyword-based sentiment analysis for real-time coach reactions."""
+    text_lower = text.lower()
+    scores = {}
+    for sentiment, keywords in SENTIMENT_KEYWORDS.items():
+        score = sum(1 for kw in keywords if kw in text_lower)
+        scores[sentiment] = score
+
+    max_sentiment = max(scores, key=scores.get)
+    if scores[max_sentiment] == 0:
+        max_sentiment = "neutral"
+
+    # Determine animation mood for 3D coach
+    mood_map = {
+        "positive": "celebrating",
+        "negative": "encouraging",
+        "curious": "thinking",
+        "greeting": "waving",
+        "neutral": "idle"
     }
+
+    # Determine energy level (1-5)
+    total_hits = sum(scores.values())
+    energy = min(5, max(1, total_hits))
+
+    return {
+        "sentiment": max_sentiment,
+        "mood": mood_map.get(max_sentiment, "idle"),
+        "energy": energy,
+        "scores": scores
+    }
+
+
+@api_router.post("/chatbot/sentiment")
+async def get_sentiment(data: SentimentRequest):
+    """Analyze sentiment of user text for real-time coach reactions."""
+    result = analyze_sentiment(data.text)
+    return result
+
+
+@api_router.get("/chatbot/coaches")
+async def get_coaches():
+    """Return all available coaches with full profile info."""
+    coaches = []
+    for cid, profile in COACH_PROFILES.items():
+        coaches.append({
+            "id": cid,
+            "name": profile["name"],
+            "gender": profile["gender"],
+            "tagline": profile["tagline"],
+            "avatar_style": profile["avatar_style"],
+            "accent_color": profile["accent_color"]
+        })
+    return {"coaches": coaches}
 
 
 @api_router.put("/chatbot/persona")
 async def set_chatbot_persona(data: ChatPersonaUpdate, user_id: str = Depends(get_current_user)):
-    """Save user's preferred chatbot persona."""
-    if data.persona not in PERSONA_PROMPTS:
-        raise HTTPException(status_code=400, detail=f"Invalid persona. Choose from: {list(PERSONA_PROMPTS.keys())}")
+    """Save user's preferred chatbot coach."""
+    if data.persona not in COACH_PROFILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid coach. Choose from: {list(COACH_PROFILES.keys())}"
+        )
 
     await db.users.update_one(
         {"id": user_id},
         {"$set": {"chatbot_persona": data.persona}}
     )
-    return {"message": f"Persona set to {data.persona}", "persona": data.persona}
+    coach = COACH_PROFILES[data.persona]
+    return {"message": f"Coach set to {coach['name']}", "persona": data.persona}
 
 
 @api_router.get("/chatbot/persona")
 async def get_chatbot_persona(user_id: str = Depends(get_current_user)):
-    """Get user's selected chatbot persona."""
+    """Get user's selected chatbot coach."""
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "chatbot_persona": 1})
-    persona = user.get("chatbot_persona", "friendly_buddy") if user else "friendly_buddy"
+    persona = user.get("chatbot_persona", "alex") if user else "alex"
     return {"persona": persona}
 
 
 @api_router.post("/chatbot/message")
 async def send_chat_message(data: ChatMessage, user_id: str = Depends(get_current_user)):
-    """Send a message to the fitness chatbot and get a response."""
+    """Send a message to the fitness chatbot and get a response with sentiment."""
     try:
-        # Get user's persona preference (or use the one from request)
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        persona = data.persona or user.get("chatbot_persona", "friendly_buddy")
-        persona_prompt = PERSONA_PROMPTS.get(persona, PERSONA_PROMPTS["friendly_buddy"])
+        persona = data.persona or user.get("chatbot_persona", "alex")
+        coach = COACH_PROFILES.get(persona, COACH_PROFILES["alex"])
+        persona_prompt = coach["prompt"]
 
-        # Gather user context for personalized responses
+        # Sentiment analysis on user input
+        sentiment_data = analyze_sentiment(data.message)
+
+        # Gather user context
         user_context = ""
         if user.get("name"):
             user_context += f"User's name: {user['name']}. "
@@ -931,13 +1236,12 @@ async def send_chat_message(data: ChatMessage, user_id: str = Depends(get_curren
         if user.get("activity_level"):
             user_context += f"Activity level: {user['activity_level']}. "
 
-        # Get recent chat history (last 10 messages for context)
+        # Get recent chat history
         recent_history = await db.chat_history.find(
             {"user_id": user_id}
         ).sort("timestamp", -1).limit(10).to_list(10)
         recent_history.reverse()
 
-        # Build conversation for LLM
         history_text = ""
         for msg in recent_history:
             role = "User" if msg["role"] == "user" else "Assistant"
@@ -945,23 +1249,41 @@ async def send_chat_message(data: ChatMessage, user_id: str = Depends(get_curren
 
         model = genai.GenerativeModel("gemini-2.5-flash")
 
-        full_prompt = f"""{persona_prompt}
+        # Enhanced prompt with sentiment awareness
+        sentiment_instruction = ""
+        if sentiment_data["sentiment"] == "positive":
+            sentiment_instruction = "The user seems happy and positive. Match their energy! Celebrate with them."
+        elif sentiment_data["sentiment"] == "negative":
+            sentiment_instruction = (
+                "The user seems frustrated, tired, or down. "
+                "Respond with extra empathy and encouragement in your style. Lift them up."
+            )
+        elif sentiment_data["sentiment"] == "curious":
+            sentiment_instruction = "The user is asking a question. Be thorough and helpful with your answer."
+        elif sentiment_data["sentiment"] == "greeting":
+            sentiment_instruction = "The user is greeting you. Be warm and welcoming in your character's style."
 
-You are a fitness and health chatbot. You know about workouts, nutrition, supplements, recovery, mental health related to fitness, and general wellness.
-
-USER CONTEXT: {user_context}
-
-CONVERSATION HISTORY:
-{history_text}
-
-User: {data.message}
-
-Respond naturally in character. Keep responses helpful and conversational (2-4 paragraphs max).
-If the user asks something unrelated to health/fitness, gently steer the conversation back while being helpful.
-Always remember you're chatting with a real person - be personable!"""
+        full_prompt = (
+            f"{persona_prompt}\n\n"
+            f"You are a fitness and health chatbot named {coach['name']}. "
+            f"You know about workouts, nutrition, supplements, recovery, "
+            f"mental health related to fitness, and general wellness.\n\n"
+            f"SENTIMENT CONTEXT: {sentiment_instruction}\n\n"
+            f"USER CONTEXT: {user_context}\n\n"
+            f"CONVERSATION HISTORY:\n{history_text}\n\n"
+            f"User: {data.message}\n\n"
+            f"Respond naturally in character as {coach['name']}. "
+            f"Keep responses helpful and conversational (2-4 paragraphs max).\n"
+            f"If the user asks something unrelated to health/fitness, "
+            f"gently steer the conversation back while being helpful.\n"
+            f"Always remember you're chatting with a real person - be personable!"
+        )
 
         response = model.generate_content(full_prompt)
         bot_reply = response.text.strip()
+
+        # Analyze sentiment of bot reply too for animations
+        reply_sentiment = analyze_sentiment(bot_reply)
 
         # Save both messages to history
         now = datetime.now(timezone.utc)
@@ -972,6 +1294,7 @@ Always remember you're chatting with a real person - be personable!"""
                 "role": "user",
                 "content": data.message,
                 "persona": persona,
+                "sentiment": sentiment_data["sentiment"],
                 "timestamp": now.isoformat()
             },
             {
@@ -980,6 +1303,7 @@ Always remember you're chatting with a real person - be personable!"""
                 "role": "assistant",
                 "content": bot_reply,
                 "persona": persona,
+                "sentiment": reply_sentiment["sentiment"],
                 "timestamp": (now + timedelta(seconds=1)).isoformat()
             }
         ])
@@ -987,7 +1311,10 @@ Always remember you're chatting with a real person - be personable!"""
         return {
             "reply": bot_reply,
             "persona": persona,
-            "timestamp": now.isoformat()
+            "coach_name": coach["name"],
+            "timestamp": now.isoformat(),
+            "user_sentiment": sentiment_data,
+            "reply_sentiment": reply_sentiment
         }
 
     except Exception as e:
@@ -1012,14 +1339,37 @@ async def clear_chat_history(user_id: str = Depends(get_current_user)):
     await db.chat_history.delete_many({"user_id": user_id})
     return {"message": "Chat history cleared"}
 
+
+@app.get("/health")
+async def health_check():
+    """Public health check used by load balancers and deployment platforms."""
+    return {
+        "status": "ok",
+        "service": "fittrack-api",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 app.include_router(api_router)
+
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get('CORS_ORIGINS', '*').split(',')
+    if origin.strip()
+]
+if not cors_origins:
+    cors_origins = ['*']
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1024,
 )
 
 logging.basicConfig(

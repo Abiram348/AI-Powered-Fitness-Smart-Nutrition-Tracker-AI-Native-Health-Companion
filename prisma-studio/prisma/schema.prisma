@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+  user_id          String? @map("id")
+  email            String
+  password         String
+  name             String
+  age              Int?
+  height           Float?
+  current_weight   Float?
+  goal_weight      Float?
+  gender           String?
+  activity_level   String?
+  goal             String?
+  chatbot_persona  String?
+  created_at       String?
+}
+
+model food_logs {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  log_id    String? @map("id")
+  user_id   String
+  food_name String
+  calories  Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  fiber     Float?
+  sugar     Float?
+  meal_type String
+  timestamp String
+}
+
+model water_logs {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  log_id    String? @map("id")
+  user_id   String
+  amount_ml Float
+  timestamp String
+}
+
+model weight_logs {
+  id                  String  @id @default(auto()) @map("_id") @db.ObjectId
+  log_id              String? @map("id")
+  user_id             String
+  weight              Float
+  body_fat_percentage Float?
+  timestamp           String
+}
+
+model workout_logs {
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+  log_id           String? @map("id")
+  user_id          String
+  exercise_name    String
+  sets             Int
+  reps             Int
+  weight           Float?
+  duration_minutes Int?
+  calories_burned  Float?
+  notes            String?
+  timestamp        String
+}
+
+model chat_history {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  msg_id    String? @map("id")
+  user_id   String
+  role      String
+  content   String
+  persona   String?
+  timestamp String
+}

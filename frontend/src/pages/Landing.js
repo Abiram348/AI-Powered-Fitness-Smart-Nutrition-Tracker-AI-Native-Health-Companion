@@ -26,6 +26,7 @@ export const Landing = () => {
     email: '',
     password: '',
     name: '',
+    gender: '',
     age: '',
     height: '',
     current_weight: '',
@@ -63,6 +64,7 @@ export const Landing = () => {
             email: formData.email,
             password: formData.password,
             name: formData.name,
+            gender: formData.gender || undefined,
             age: parseInt(formData.age) || undefined,
             height: parseFloat(formData.height) || undefined,
             current_weight: parseFloat(formData.current_weight) || undefined,
@@ -213,7 +215,7 @@ export const Landing = () => {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-card border border-border p-8"
+            className="w-full max-w-md glass-card rounded-2xl p-5 sm:p-8 mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/40"
         >
           <div className="text-center mb-8">
             <h2 className="text-3xl font-barlow font-black text-primary uppercase mb-2">
@@ -267,6 +269,47 @@ export const Landing = () => {
 
             {!isLogin && (
               <>
+                {/* Gender Selection */}
+                <div>
+                  <Label className="uppercase text-xs tracking-wider mb-2 block">Gender</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: 'male', label: 'Male', icon: '♂', color: 'from-blue-500 to-blue-600' },
+                      { value: 'female', label: 'Female', icon: '♀', color: 'from-pink-500 to-pink-600' },
+                      { value: 'other', label: 'Other', icon: '⚧', color: 'from-purple-500 to-purple-600' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        data-testid={`register-gender-${option.value}`}
+                        onClick={() => setFormData({ ...formData, gender: option.value })}
+                        className={`relative flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all duration-200 ${
+                          formData.gender === option.value
+                            ? 'border-primary bg-primary/10 scale-[1.02] shadow-md'
+                            : 'border-border hover:border-primary/40 hover:bg-primary/5'
+                        }`}
+                      >
+                        <span className={`text-2xl ${
+                          formData.gender === option.value ? '' : 'opacity-60'
+                        }`}>{option.icon}</span>
+                        <span className={`text-xs font-bold uppercase tracking-wider ${
+                          formData.gender === option.value ? 'text-primary' : 'text-muted-foreground'
+                        }`}>{option.label}</span>
+                        {formData.gender === option.value && (
+                          <motion.div
+                            layoutId="gender-indicator"
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center"
+                            initial={false}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          >
+                            <span className="text-[8px] text-primary-foreground font-bold">✓</span>
+                          </motion.div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="age" className="uppercase text-xs tracking-wider">Age</Label>
@@ -391,7 +434,7 @@ export const Landing = () => {
               type="submit"
               data-testid="auth-submit-button"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 uppercase font-bold tracking-widest text-sm transform skew-x-[-10deg] hover:skew-x-0 transition-transform"
+              className="w-full bg-gradient-to-r from-primary to-orange-600 text-primary-foreground hover:opacity-90 h-12 uppercase font-bold tracking-widest text-sm rounded-lg shadow-lg shadow-primary/20 transition-all"
             >
               {loading ? 'Processing...' : isLogin ? 'Login' : 'Create Account'}
             </Button>
@@ -423,18 +466,18 @@ export const Landing = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-barlow font-black text-foreground uppercase tracking-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-barlow font-black text-foreground uppercase tracking-tight mb-4 sm:mb-6">
               AI-Powered
-              <span className="block text-primary mt-2">Fitness Revolution</span>
+              <span className="block text-primary mt-1 sm:mt-2 text-glow">Fitness Revolution</span>
             </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 font-manrope">
+            <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8 font-manrope px-4">
               Track food with AI vision. Get personalized diet plans. Achieve your fitness goals with precision.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
               <Button
                 onClick={() => setShowAuth(true)}
                 data-testid="get-started-button"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 h-14 px-12 uppercase font-bold tracking-widest text-base transform skew-x-[-10deg] hover:skew-x-0 transition-transform"
+                className="bg-gradient-to-r from-primary to-orange-600 text-primary-foreground hover:opacity-90 h-12 sm:h-14 px-8 sm:px-12 uppercase font-bold tracking-widest text-sm sm:text-base rounded-lg shadow-xl shadow-primary/25 transition-all hover:shadow-2xl hover:shadow-primary/30 w-full sm:w-auto"
               >
                 Start Your Journey
                 <ChevronRight className="ml-2 w-5 h-5" />
@@ -443,7 +486,7 @@ export const Landing = () => {
                 onClick={() => setShowDemos(true)}
                 data-testid="view-demos-button"
                 variant="outline"
-                className="border-primary text-primary hover:bg-primary/10 h-14 px-12 uppercase font-bold tracking-widest text-base"
+                className="border-primary/40 text-primary hover:bg-primary/10 h-12 sm:h-14 px-8 sm:px-12 uppercase font-bold tracking-widest text-sm sm:text-base rounded-lg backdrop-blur-sm w-full sm:w-auto"
               >
                 <PlayCircle className="mr-2 w-5 h-5" />
                 Watch Demos
@@ -454,57 +497,57 @@ export const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-card border-y border-border">
-        <div className="container mx-auto px-6">
+      <section className="py-16 sm:py-24 bg-card/50 border-y border-border">
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
-            className="grid md:grid-cols-3 gap-8"
+            className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
           >
-            <div className="p-8 bg-background border border-border hover:border-primary/50 transition-colors">
-              <div className="w-16 h-16 bg-primary/10 flex items-center justify-center mb-6">
-                <Target className="w-8 h-8 text-primary" strokeWidth={1.5} />
+            <div className="p-6 sm:p-8 glass-card rounded-xl hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                <Target className="w-6 h-6 sm:w-8 sm:h-8 text-primary" strokeWidth={1.5} />
               </div>
-              <h3 className="text-2xl font-barlow font-black uppercase mb-4">AI Food Recognition</h3>
-              <p className="text-muted-foreground">Snap a photo, get instant nutritional breakdown. No manual logging needed.</p>
+              <h3 className="text-xl sm:text-2xl font-barlow font-black uppercase mb-3 sm:mb-4">AI Food Recognition</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Snap a photo, get instant nutritional breakdown. No manual logging needed.</p>
             </div>
 
-            <div className="p-8 bg-background border border-border hover:border-primary/50 transition-colors">
-              <div className="w-16 h-16 bg-primary/10 flex items-center justify-center mb-6">
-                <Zap className="w-8 h-8 text-primary" strokeWidth={1.5} />
+            <div className="p-6 sm:p-8 glass-card rounded-xl hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" strokeWidth={1.5} />
               </div>
-              <h3 className="text-2xl font-barlow font-black uppercase mb-4">Smart Diet Coach</h3>
-              <p className="text-muted-foreground">Personalized meal plans that adapt to your progress and goals.</p>
+              <h3 className="text-xl sm:text-2xl font-barlow font-black uppercase mb-3 sm:mb-4">Smart Diet Coach</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Personalized meal plans that adapt to your progress and goals.</p>
             </div>
 
-            <div className="p-8 bg-background border border-border hover:border-primary/50 transition-colors">
-              <div className="w-16 h-16 bg-primary/10 flex items-center justify-center mb-6">
-                <TrendingUp className="w-8 h-8 text-primary" strokeWidth={1.5} />
+            <div className="p-6 sm:p-8 glass-card rounded-xl hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 sm:col-span-2 md:col-span-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-4 sm:mb-6">
+                <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-primary" strokeWidth={1.5} />
               </div>
-              <h3 className="text-2xl font-barlow font-black uppercase mb-4">Progress Analytics</h3>
-              <p className="text-muted-foreground">Track every metric. Visualize your transformation journey.</p>
+              <h3 className="text-xl sm:text-2xl font-barlow font-black uppercase mb-3 sm:mb-4">Progress Analytics</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Track every metric. Visualize your transformation journey.</p>
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-6 text-center">
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 sm:px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl sm:text-5xl font-barlow font-black uppercase mb-6">Ready to Transform?</h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-barlow font-black uppercase mb-4 sm:mb-6">Ready to Transform?</h2>
+            <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-xl mx-auto px-4">
               Join thousands who are achieving their fitness goals with AI-powered precision.
             </p>
             <Button
               onClick={() => setShowAuth(true)}
               data-testid="cta-get-started-button"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 h-14 px-12 uppercase font-bold tracking-widest text-base transform skew-x-[-10deg] hover:skew-x-0 transition-transform"
+              className="bg-gradient-to-r from-primary to-orange-600 text-primary-foreground hover:opacity-90 h-12 sm:h-14 px-8 sm:px-12 uppercase font-bold tracking-widest text-sm sm:text-base rounded-lg shadow-xl shadow-primary/25 w-full sm:w-auto"
             >
               Get Started Free
             </Button>

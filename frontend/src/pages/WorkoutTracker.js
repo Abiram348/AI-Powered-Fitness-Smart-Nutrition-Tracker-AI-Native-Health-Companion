@@ -77,21 +77,21 @@ export const WorkoutTracker = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-6 py-8 space-y-8 max-w-4xl">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-4xl md:text-5xl font-barlow font-black uppercase">Workout Tracker</h1>
-            <p className="text-muted-foreground mt-2 uppercase text-xs tracking-widest">Log Your Training Sessions</p>
+            <h1 className="page-title">Workout Tracker</h1>
+            <p className="page-subtitle">Log Your Training Sessions</p>
           </div>
           
           <Button
             onClick={() => setShowForm(!showForm)}
             data-testid="toggle-workout-form"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 uppercase font-bold tracking-widest"
+            className="bg-gradient-to-r from-primary to-orange-600 text-primary-foreground hover:opacity-90 h-12 px-6 uppercase font-bold tracking-widest w-full sm:w-auto rounded-lg shadow-lg shadow-primary/20"
           >
             <Plus className="mr-2 w-5 h-5" />
             Add Workout
@@ -104,7 +104,7 @@ export const WorkoutTracker = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             onSubmit={handleSubmit}
-            className="bg-card border border-border p-6 space-y-4"
+            className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4"
           >
             <h2 className="text-xl font-barlow font-black uppercase">Log New Exercise</h2>
             
@@ -199,9 +199,9 @@ export const WorkoutTracker = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-card border border-border p-6"
+          className="card-hover"
         >
-          <h2 className="text-xl font-barlow font-black uppercase mb-4">Today's Session</h2>
+          <h2 className="text-lg sm:text-xl font-barlow font-black uppercase mb-4">Today's Session</h2>
           
           {workouts.length === 0 ? (
             <div className="text-center py-12">
