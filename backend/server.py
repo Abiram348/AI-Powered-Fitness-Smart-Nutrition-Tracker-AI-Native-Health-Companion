@@ -38,7 +38,9 @@ JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24 * 7
 
 # LLM Configuration
-GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY', os.environ.get('EMERGENT_LLM_KEY', ''))
+GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY', '').strip()
+if not GOOGLE_API_KEY:
+    raise RuntimeError("GOOGLE_API_KEY is required. Set it in your environment variables.")
 genai.configure(api_key=GOOGLE_API_KEY)
 
 

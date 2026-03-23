@@ -8,7 +8,7 @@ from PIL import Image
 import time
 
 class SmartNutritionAPITester:
-    def __init__(self, base_url="https://smart-nutrition-hub-1.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://ai-powered-fitness-smart-nutrition.onrender.com/api"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
