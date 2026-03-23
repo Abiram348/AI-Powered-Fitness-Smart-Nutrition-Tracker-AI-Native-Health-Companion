@@ -14,7 +14,8 @@ const API_BASE_URL = configuredBaseUrl || fallbackBaseUrl;
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
-  timeout: 30000,
+  // Render free instances can cold-start slowly; allow enough time for first request.
+  timeout: 120000,
   headers: {
     'Content-Type': 'application/json',
   },
