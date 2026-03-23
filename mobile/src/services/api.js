@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Set EXPO_PUBLIC_API_URL in mobile/.env (and EAS env for production builds).
 const configuredBaseUrl = normalizeUrl(process.env.EXPO_PUBLIC_API_URL || '');
-const fallbackBaseUrl = __DEV__ ? 'http://localhost:8000' : 'https://your-production-api.com';
+const fallbackBaseUrl = 'https://ai-powered-fitness-smart-nutrition.onrender.com';
 const API_BASE_URL = configuredBaseUrl || fallbackBaseUrl;
 
 const api = axios.create({
