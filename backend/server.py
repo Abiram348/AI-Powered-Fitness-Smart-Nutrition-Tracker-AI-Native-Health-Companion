@@ -1340,6 +1340,18 @@ async def clear_chat_history(user_id: str = Depends(get_current_user)):
     return {"message": "Chat history cleared"}
 
 
+@app.get("/")
+async def root():
+    """Root endpoint for quick browser checks."""
+    return {
+        "status": "ok",
+        "service": "fittrack-api",
+        "message": "Backend is live.",
+        "health": "/health",
+        "docs": "/docs"
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Public health check used by load balancers and deployment platforms."""
